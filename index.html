@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ε-NFA → DFA Converter & DFA Minimizer | Powerset Construction</title>
+    <meta name="description"
+        content="Interactive epsilon-NFA to DFA converter and DFA minimizer using Powerset Construction, Equivalence Theorem, and Myhill-Nerode Table. Features step-by-step educational mode and a dynamic sandbox.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                        fira: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col overflow-y-auto">
+
+    <nav id="topnav"
+        class="glass-strong flex items-center justify-between px-5 flex-shrink-0 z-50 border-b border-white/5">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
+                ε</div>
+            <h1 class="text-base font-semibold">
+                <span
+                    class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">ε-NFA
+                    → DFA Converter</span>
+            </h1>
+        </div>
+        <div class="flex" role="tablist">
+            <button id="tab-btn-edu" class="tab-btn active" role="tab" onclick="switchTab('edu')">
+                <span class="mr-1.5 text-base">📚</span> Educational Mode
+            </button>
+            <button id="tab-btn-sandbox" class="tab-btn" role="tab" onclick="switchTab('sandbox')">
+                <span class="mr-1.5 text-base">⚡</span> Dynamic Sandbox
+            </button>
+            <button id="tab-btn-min" class="tab-btn" role="tab" onclick="switchTab('min')">
+                <span class="mr-1.5 text-base">✂️</span> Minimize
+            </button>
+        </div>
+        <div class="text-[0.65rem] text-slate-600 font-fira tracking-wider uppercase">Powerset Construction</div>
+    </nav>
+
+    <section id="mode-edu" class="flex-1 flex flex-col">
+
+        <div class="flex-1 flex p-3 gap-3" style="min-height: 420px;">
+            <div class="w-1/2 flex flex-col min-h-0">
+                <div class="glass rounded-xl flex-1 flex flex-col p-4 min-h-0">
+                    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                        <h2 class="text-xs font-semibold text-indigo-400 uppercase tracking-widest">DFA Visualization
+                        </h2>
+                        <span id="edu-badge" class="badge badge-info">Step 0/6</span>
+                    </div>
+                    <div class="flex-1 min-h-0 rounded-lg overflow-hidden bg-slate-950/50">
+                        <svg id="edu-svg" viewBox="0 0 1000 600" class="w-full h-full"
+                            xmlns="http://www.w3.org/2000/svg"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-1/2 flex flex-col min-h-0">
+                <div class="glass rounded-xl flex-1 flex flex-col p-4 min-h-0">
+                    <h2 class="text-xs font-semibold text-purple-400 uppercase tracking-widest mb-2 flex-shrink-0">
+                        Algorithm Trace</h2>
+                    <div id="edu-log" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scroll min-h-0"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="edu-scanner-box" class="px-3 pb-1 hidden">
+            <div class="glass rounded-xl p-3 anim-fadeInUp">
+                <div class="flex items-center gap-3">
+                    <label
+                        class="text-xs font-semibold text-emerald-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
+                        <span class="text-base">🔍</span> Live DFA Scanner
+                    </label>
+                    <input id="edu-scanner-input" type="text" placeholder='Type a string to test (e.g. FE, F E, hello)…'
+                        class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm font-fira text-white placeholder-slate-600 transition-all">
+                    <span id="edu-scanner-badge" class="badge badge-idle min-w-[90px] justify-center">Idle</span>
+                </div>
+                <div id="edu-scanner-trace"
+                    class="mt-1.5 text-[0.65rem] font-fira text-slate-500 hidden leading-relaxed"></div>
+            </div>
+        </div>
+
+        <div class="px-3 pb-3 pt-1 flex-shrink-0">
+            <div class="glass rounded-xl p-3 flex items-center justify-between">
+                <button id="edu-prev-btn" onclick="eduPrev()" disabled
+                    class="px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-all disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-white/5">
+                    ← Prev
+                </button>
+                <div class="flex items-center gap-3">
+                    <span id="edu-step-text" class="text-xs text-slate-500 font-fira">Step 0 / 6</span>
+                    <div id="edu-dots" class="flex gap-1"></div>
+                </div>
+                <button id="edu-next-btn" onclick="eduNext()"
+                    class="px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97]">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="mode-sandbox" class="flex-1 hidden flex flex-col">
+
+        <div id="sb-error" class="hidden mx-3 mt-3 error-box rounded-xl px-4 py-3 text-sm font-medium anim-fadeInUp">
+        </div>
+
+        <div class="flex-1 flex p-3 gap-3" style="min-height: 520px;">
+            <div class="w-[30%] flex flex-col min-h-0">
+                <div class="glass rounded-xl p-4 flex flex-col flex-1 min-h-0">
+                    <h2 class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-3 flex-shrink-0">NFA
+                        Definition</h2>
+
+                    <select id="sb-select" onchange="loadExample()"
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-400 mb-3 cursor-pointer hover:bg-white/8 transition-all flex-shrink-0">
+                        <option value="">— Select an Example —</option>
+                        <option value="ab_star">ab* (a followed by zero or more b's)</option>
+                        <option value="binary_end_0">Binary strings ending in 0</option>
+                        <option value="even_ab">Even number of a's and b's</option>
+                        <option value="ctrl_f">F(ε|␣)E — Ctrl+F regex</option>
+                        <option value="contains_01">Binary containing "01"</option>
+                    </select>
+
+                    <textarea id="sb-textarea" spellcheck="false"
+                        class="flex-1 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-[0.8rem] font-fira text-slate-300 placeholder-slate-600 resize-none min-h-[180px] transition-all custom-scroll"
+                        placeholder="start: q0&#10;accept: q2&#10;&#10;q0, a, q1&#10;q1, b, q1&#10;q1, eps, q2"></textarea>
+
+                    <button id="sb-convert-btn" onclick="runConversion()"
+                        class="mt-3 w-full py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97] flex-shrink-0">
+                        ⚡ Convert to DFA
+                    </button>
+
+                    <div class="mt-3 glass-strong rounded-lg p-3 flex-shrink-0">
+                        <label
+                            class="text-[0.65rem] font-semibold text-emerald-400 uppercase tracking-widest mb-2 block">Test
+                            String</label>
+                        <div class="flex gap-2 items-center">
+                            <input id="sb-test-input" type="text" placeholder="Type to test…"
+                                class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-fira text-white placeholder-slate-600 transition-all min-w-0">
+                            <span id="sb-test-badge"
+                                class="badge badge-idle text-[0.65rem] min-w-[72px] justify-center">Idle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-[70%] flex flex-col min-h-0 gap-3">
+                <div class="glass rounded-xl p-4 flex-1 flex flex-col min-h-0">
+                    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                        <h2 class="text-xs font-semibold text-indigo-400 uppercase tracking-widest">DFA Graph</h2>
+                        <span id="sb-state-info" class="text-[0.65rem] text-slate-600 font-fira"></span>
+                    </div>
+                    <div class="flex-1 min-h-0 rounded-lg overflow-hidden bg-slate-950/50">
+                        <svg id="sb-svg" viewBox="0 0 1000 600" class="w-full h-full"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <text x="500" y="300" text-anchor="middle" fill="#334155" font-family="Inter, sans-serif"
+                                font-size="14">Define an NFA and click Convert</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl p-4 flex flex-col min-h-0" style="max-height: 260px;">
+                    <h2 class="text-xs font-semibold text-purple-400 uppercase tracking-widest mb-2 flex-shrink-0">DFA
+                        Transition Table</h2>
+                    <div id="sb-table-box" class="flex-1 overflow-auto min-h-0 custom-scroll">
+                        <div class="text-xs text-slate-600 text-center py-6 font-fira">No data yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!--  MODE 3: DFA MINIMIZER                 -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="mode-min" class="flex-1 hidden flex flex-col">
+
+        <div id="min-error" class="hidden mx-3 mt-3 error-box rounded-xl px-4 py-3 text-sm font-medium anim-fadeInUp">
+        </div>
+
+        <div class="flex-1 flex p-3 gap-3" style="min-height: 520px;">
+            <!-- LEFT PANEL: Input -->
+            <div class="w-[30%] flex flex-col min-h-0">
+                <div class="glass rounded-xl p-4 flex flex-col flex-1 min-h-0">
+                    <h2 class="text-xs font-semibold text-rose-400 uppercase tracking-widest mb-3 flex-shrink-0">DFA
+                        Definition</h2>
+
+                    <select id="min-method"
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-400 mb-3 cursor-pointer hover:bg-white/8 transition-all flex-shrink-0">
+                        <option value="equivalence">Method A: Equivalence Theorem (Partitioning)</option>
+                        <option value="myhill">Method B: Myhill-Nerode Table</option>
+                    </select>
+
+                    <select id="min-example-select" onchange="minDFA_loadExample()"
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-400 mb-3 cursor-pointer hover:bg-white/8 transition-all flex-shrink-0">
+                        <option value="">— Select an Example —</option>
+                        <option value="ex1">4-State DFA (reducible to 3)</option>
+                        <option value="ex2">5-State DFA with unreachable</option>
+                        <option value="ex3">Already minimal DFA</option>
+                    </select>
+
+                    <textarea id="min-textarea" spellcheck="false"
+                        class="flex-1 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-[0.8rem] font-fira text-slate-300 placeholder-slate-600 resize-none min-h-[180px] transition-all custom-scroll"
+                        placeholder="start: A&#10;accept: C, D&#10;&#10;A, 0, B&#10;A, 1, C&#10;B, 0, A&#10;B, 1, D&#10;C, 0, B&#10;C, 1, A&#10;D, 0, B&#10;D, 1, A"></textarea>
+
+                    <button id="min-start-btn" onclick="minDFA_start()"
+                        class="mt-3 w-full py-2.5 rounded-lg bg-gradient-to-r from-rose-600 to-orange-600 text-sm font-semibold hover:from-rose-500 hover:to-orange-500 transition-all shadow-lg shadow-rose-500/20 active:scale-[0.97] flex-shrink-0">
+                        ✂️ Start Minimization
+                    </button>
+
+                    <div id="min-stats" class="mt-3 glass-strong rounded-lg p-3 flex-shrink-0 hidden">
+                        <div class="text-[0.65rem] font-semibold text-emerald-400 uppercase tracking-widest mb-1">Result
+                        </div>
+                        <div id="min-stats-text" class="text-xs font-fira text-slate-400"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: Output -->
+            <div class="w-[70%] flex flex-col min-h-0 gap-3">
+                <!-- SVG Graph -->
+                <div class="glass rounded-xl p-4 flex-1 flex flex-col min-h-0">
+                    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                        <h2 class="text-xs font-semibold text-rose-400 uppercase tracking-widest">Minimized DFA Graph
+                        </h2>
+                        <span id="min-badge" class="badge badge-idle">Idle</span>
+                    </div>
+                    <div class="flex-1 min-h-0 rounded-lg overflow-hidden bg-slate-950/50">
+                        <svg id="min-svg" viewBox="0 0 1000 600" class="w-full h-full"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <text x="500" y="300" text-anchor="middle" fill="#334155" font-family="Inter, sans-serif"
+                                font-size="14">Define a DFA and click Start Minimization</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Algorithm Log + Next Step -->
+                <div class="glass rounded-xl p-4 flex flex-col min-h-0" style="max-height: 320px;">
+                    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                        <h2 class="text-xs font-semibold text-amber-400 uppercase tracking-widest">Algorithm Trace</h2>
+                        <div class="flex items-center gap-2">
+                            <span id="min-step-text" class="text-[0.65rem] text-slate-600 font-fira"></span>
+                            <button id="min-next-btn" onclick="minDFA_nextStep()" disabled
+                                class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 text-xs font-semibold hover:from-amber-500 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:from-amber-600 disabled:hover:to-orange-600">
+                                Next Step →
+                            </button>
+                        </div>
+                    </div>
+                    <div id="min-log" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scroll min-h-0">
+                        <div class="text-xs text-slate-600 text-center py-6 font-fira">No minimization trace yet</div>
+                    </div>
+                    <!-- Myhill-Nerode Table Container -->
+                    <div id="min-myhill-container" class="hidden mt-3 overflow-auto custom-scroll"
+                        style="max-height: 200px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js" defer></script>
+</body>
+
+</html>
