@@ -5,7 +5,7 @@
 
 A premium, interactive web-based simulator designed for Theory of Computation (TOC) students and educators. This tool visualizes the formal transformation of Non-deterministic Finite Automata with epsilon transitions (ε-NFA) to Deterministic Finite Automata (DFA), and performs DFA minimization using state-of-the-art algorithms.
 
-![Project Preview](https://toc-project-five.vercel.app/)
+[View Live Project](https://toc-project-five.vercel.app/)
 
 ## ⚡ Main Features
 
